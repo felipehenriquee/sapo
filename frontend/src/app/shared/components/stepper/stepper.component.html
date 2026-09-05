@@ -1,0 +1,52 @@
+<div class="mb-6 flex items-center">
+  @for (label of steps; track label; let i = $index; let last = $last) {
+    <div class="flex items-center" [class.flex-1]="!last">
+      <div class="flex shrink-0 items-center gap-2">
+        <div
+          class="font-display-700 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm"
+          [style.background-color]="i <= activeIndex ? color.primary : 'transparent'"
+          [style.border]="'1px solid ' + color.primary"
+          [style.color]="i <= activeIndex ? color.inkOnAccent : color.primary"
+        >
+          {{ i + 1 }}
+        </div>
+        <span
+          class="font-sans-400 whitespace-nowrap text-sm"
+          [style.color]="i === activeIndex ? color.ink : color.inkMuted"
+        >
+          {{ label }}
+        </span>
+      </div>
+
+      @if (!last) {
+        <div class="mx-3 h-px flex-1" [style.background-color]="color.primary"></div>
+      }
+    </div>
+  }
+</div>
+
+<ng-content />
+
+<div class="mt-6 flex justify-between gap-2">
+  <div>
+    @if (activeIndex === 0) {
+      <app-button variant="outlined" [color]="color.ink" type="button" (click)="cancelled.emit()">
+        {{ 'common.cancel' | transloco }}
+      </app-button>
+    } @else if (canGoBack) {
+      <app-button variant="outlined" [color]="color.ink" type="button" (click)="back.emit()">
+        {{ 'common.back' | transloco }}
+      </app-button>
+    }
+  </div>
+
+  <app-button
+    [color]="color.primary"
+    [textColor]="color.inkOnAccent"
+    type="button"
+    [disabled]="nextDisabled || saving"
+    (click)="next.emit()"
+  >
+    {{ (isLastStep ? 'common.finish' : 'common.next') | transloco }}
+  </app-button>
+</div>

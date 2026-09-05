@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { FindOptionsWhere, Like, Repository } from 'typeorm'
+import { Repository } from 'typeorm'
 
 import { PaginatedResponseDto } from '@/common/dto/paginated-response.dto'
 import { BaseService } from '@/common/services/base.service'
@@ -9,7 +9,9 @@ import { LessonQueryDto } from '@/features/lessons/dto/lesson-query.dto'
 
 /**
  * Service da feature "lessons". CRUD padrão vem do BaseService; `getAll`
- * ganha o filtro por `?unitId=` e a busca livre `?search=`.
+ * ganha os filtros `?unitId=`/`?type=`/`?courseId=` (este último via join
+ * com `unit`, já que `courseId` não é coluna direta de Lesson) + a busca
+ * livre `?search=`.
  */
 @Injectable()
 export class LessonsService extends BaseService<Lesson> {
@@ -24,30 +26,45 @@ export class LessonsService extends BaseService<Lesson> {
     const perPage = query.perPage ?? 20
     const search = query.search?.trim()
 
-    const scope: FindOptionsWhere<Lesson> = {}
-    if (query.unitId) {
-      scope.unitId = query.unitId
-    }
-
-    let where: FindOptionsWhere<Lesson> | FindOptionsWhere<Lesson>[] | undefined
-    if (search) {
-      where = [
-        { ...scope, name: Like(`%${search}%`) },
-        { ...scope, description: Like(`%${search}%`) },
-      ]
-    } else if (Object.keys(scope).length > 0) {
-      where = scope
-    }
-
-    const [data, total] = await this.repository.findAndCount({
-      where,
+    const qb = this.repository
+      .createQueryBuilder('lesson')
       // `content` (HTML da aula) pode ser grande — fica de fora da listagem,
       // só é devolvido pelo getById (herdado do BaseService).
-      select: ['id', 'name', 'description', 'unitId', 'type', 'createdAt', 'updatedAt'],
-      skip: (page - 1) * perPage,
-      take: perPage,
-      order: query.sort ? { [query.sort]: query.order ?? 'ASC' } : undefined,
-    })
+      .select([
+        'lesson.id',
+        'lesson.name',
+        'lesson.description',
+        'lesson.unitId',
+        'lesson.type',
+        'lesson.createdAt',
+        'lesson.updatedAt',
+      ])
+
+    if (query.unitId) {
+      qb.andWhere('lesson.unitId = :unitId', { unitId: query.unitId })
+    }
+    if (query.type) {
+      qb.andWhere('lesson.type = :type', { type: query.type })
+    }
+    if (query.courseId) {
+      qb.leftJoin('lesson.unit', 'unit').andWhere('unit.courseId = :courseId', {
+        courseId: query.courseId,
+      })
+    }
+    if (search) {
+      qb.andWhere('(lesson.name LIKE :search OR lesson.description LIKE :search)', {
+        search: `%${search}%`,
+      })
+    }
+
+    if (query.sort) {
+      qb.orderBy(`lesson.${query.sort}`, query.order ?? 'ASC')
+    }
+
+    const [data, total] = await qb
+      .skip((page - 1) * perPage)
+      .take(perPage)
+      .getManyAndCount()
 
     return new PaginatedResponseDto(data, total, page, perPage)
   }

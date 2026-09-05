@@ -7,6 +7,7 @@ import { NotFoundError } from '@/common/errors'
 import { BaseService } from '@/common/services/base.service'
 import { Question } from '@/features/exercises/entities/question.entity'
 import { QuestionItem } from '@/features/exercises/entities/question-item.entity'
+import { AnswerKey } from '@/features/exercises/entities/answer-key.entity'
 import { CreateQuestionDto } from '@/features/exercises/dto/create-question.dto'
 import { UpdateQuestionDto } from '@/features/exercises/dto/update-question.dto'
 import { QuestionQueryDto } from '@/features/exercises/dto/question-query.dto'
@@ -15,19 +16,21 @@ import { QuestionQueryDto } from '@/features/exercises/dto/question-query.dto'
  * Service da feature "questions". CRUD de leitura/remoção vem do
  * BaseService; criação/edição ganham nomes próprios (`createQuestion`/
  * `updateQuestion`) em vez de sobrescrever `create`/`update` porque o
- * payload aceita `items: string[]` (textos das alternativas), que não bate
- * com o formato da entidade (`items: QuestionItem[]`) — o service separa
- * esse campo e sincroniza as QuestionItem à parte.
+ * payload aceita `items: string[]` (textos das alternativas) e
+ * `correctItemIndex` (índice da alternativa certa), que não batem com o
+ * formato da entidade — o service separa esses campos: sincroniza as
+ * QuestionItem à parte e grava o AnswerKey correspondente.
  *
  * `getAll`/`getById` nunca selecionam/joinam `AnswerKey` nem
- * `StudentAnswer` — ver AnswerKeysService/StudentAnswersService, isolamento
- * de propósito pra não vazar a resposta certa.
+ * `StudentAnswer` — o vínculo é só GRAVADO aqui, nunca lido de volta por
+ * essas rotas (isolamento de propósito pra não vazar a resposta certa).
  */
 @Injectable()
 export class QuestionsService extends BaseService<Question> {
   constructor(
     @InjectRepository(Question) repository: Repository<Question>,
     @InjectRepository(QuestionItem) private readonly itemsRepository: Repository<QuestionItem>,
+    @InjectRepository(AnswerKey) private readonly answerKeysRepository: Repository<AnswerKey>,
   ) {
     super(repository, 'Pergunta')
   }
@@ -79,30 +82,59 @@ export class QuestionsService extends BaseService<Question> {
   }
 
   async createQuestion(dto: CreateQuestionDto): Promise<Question> {
-    const { items, ...data } = dto
+    const { items, correctItemIndex, correctText, ...data } = dto
     const question = await super.create(data)
 
-    if (data.type !== 'subjective' && items?.length) {
-      await this.replaceItems(question.id, items)
+    if (data.type === 'subjective') {
+      if (correctText !== undefined) {
+        await this.upsertAnswerKey(question.id, { correctText })
+      }
+    } else if (items?.length) {
+      const created = await this.replaceItems(question.id, items)
+      if (correctItemIndex !== undefined && created[correctItemIndex]) {
+        await this.upsertAnswerKey(question.id, { correctItemId: created[correctItemIndex].id })
+      }
     }
 
     return this.getById(question.id)
   }
 
   async updateQuestion(id: string, dto: UpdateQuestionDto): Promise<Question> {
-    const { items, ...data } = dto
+    const { items, correctItemIndex, correctText, ...data } = dto
     await super.update(id, data)
 
-    if (items) {
-      await this.replaceItems(id, items)
+    if (data.type === 'subjective') {
+      if (correctText !== undefined) {
+        await this.upsertAnswerKey(id, { correctText })
+      }
+    } else if (items) {
+      const created = await this.replaceItems(id, items)
+      if (correctItemIndex !== undefined && created[correctItemIndex]) {
+        await this.upsertAnswerKey(id, { correctItemId: created[correctItemIndex].id })
+      }
     }
 
     return this.getById(id)
   }
 
-  private async replaceItems(questionId: string, items: string[]): Promise<void> {
+  private async replaceItems(questionId: string, items: string[]): Promise<QuestionItem[]> {
     await this.itemsRepository.delete({ questionId })
     const entities = items.map((name) => this.itemsRepository.create({ name, questionId }))
-    await this.itemsRepository.save(entities)
+    return this.itemsRepository.save(entities)
+  }
+
+  private async upsertAnswerKey(
+    questionId: string,
+    data: { correctItemId?: string; correctText?: string },
+  ): Promise<void> {
+    const existing = await this.answerKeysRepository.findOneBy({ questionId })
+    if (existing) {
+      Object.assign(existing, data)
+      await this.answerKeysRepository.save(existing)
+    } else {
+      await this.answerKeysRepository.save(
+        this.answerKeysRepository.create({ questionId, ...data }),
+      )
+    }
   }
 }

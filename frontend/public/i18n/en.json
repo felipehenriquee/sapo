@@ -3,6 +3,8 @@
     "add": "Add",
     "save": "Save",
     "cancel": "Cancel",
+    "next": "Next",
+    "finish": "Finish",
     "close": "Close",
     "edit": "Edit",
     "delete": "Delete",
@@ -131,6 +133,28 @@
       "title": "Lesson",
       "name": "Name",
       "description": "Description"
+    },
+    "form": {
+      "newTitle": "New lesson",
+      "detailsStep": "Details",
+      "contentStep": "Content",
+      "questionsStep": "Questions",
+      "referenceLesson": "Reference lesson",
+      "referenceLessonPlaceholder": "Search a content lesson…",
+      "addQuestion": "Add question",
+      "removeQuestion": "Remove question",
+      "questionContent": "Prompt",
+      "questionType": "Question type",
+      "questionTypes": {
+        "objective": "Objective",
+        "subjective": "Subjective"
+      },
+      "item": "Answer",
+      "addItem": "Add answer",
+      "removeItem": "Remove answer",
+      "correctItem": "Correct",
+      "correctText": "Expected answer",
+      "questionsEmpty": "No questions yet."
     }
   }
 }

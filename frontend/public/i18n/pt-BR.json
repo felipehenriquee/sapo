@@ -3,6 +3,8 @@
     "add": "Adicionar",
     "save": "Salvar",
     "cancel": "Cancelar",
+    "next": "Próximo",
+    "finish": "Concluir",
     "close": "Fechar",
     "edit": "Editar",
     "delete": "Remover",
@@ -131,6 +133,28 @@
       "title": "Aula",
       "name": "Nome",
       "description": "Descrição"
+    },
+    "form": {
+      "newTitle": "Nova aula",
+      "detailsStep": "Detalhes",
+      "contentStep": "Conteúdo",
+      "questionsStep": "Questões",
+      "referenceLesson": "Aula de referência",
+      "referenceLessonPlaceholder": "Buscar aula de conteúdo…",
+      "addQuestion": "Adicionar questão",
+      "removeQuestion": "Remover questão",
+      "questionContent": "Enunciado",
+      "questionType": "Tipo da questão",
+      "questionTypes": {
+        "objective": "Objetiva",
+        "subjective": "Dissertativa"
+      },
+      "item": "Alternativa",
+      "addItem": "Adicionar alternativa",
+      "removeItem": "Remover alternativa",
+      "correctItem": "Correta",
+      "correctText": "Resposta esperada",
+      "questionsEmpty": "Nenhuma questão cadastrada ainda."
     }
   }
 }

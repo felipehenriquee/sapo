@@ -62,6 +62,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'courses/:id/units/:unitId/lessons/new',
+        data: { title: 'lessons.form.newTitle' },
+        loadComponent: () =>
+          import('@app/features/lessons/lesson-form/lesson-form.component').then(
+            (m) => m.LessonFormComponent,
+          ),
+      },
+      {
         path: 'courses/:id/lessons/:lessonId',
         data: { title: 'lessons.details.title' },
         loadComponent: () =>

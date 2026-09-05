@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsOptional, IsUUID } from 'class-validator'
+import { IsOptional, IsString, IsUUID } from 'class-validator'
 
 export class CreateAnswerKeyDto {
   @ApiProperty({ format: 'uuid', description: 'Pergunta à qual esta resposta certa pertence' })
@@ -13,4 +13,11 @@ export class CreateAnswerKeyDto {
   @IsOptional()
   @IsUUID()
   correctItemId?: string
+
+  @ApiPropertyOptional({
+    description: 'Resposta esperada — só quando a pergunta é dissertativa',
+  })
+  @IsOptional()
+  @IsString()
+  correctText?: string
 }

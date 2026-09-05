@@ -38,6 +38,10 @@ export class AnswerKey {
   @Column({ name: 'correct_item_id', type: 'varchar', length: 36, nullable: true })
   correctItemId!: string | null
 
+  /** Resposta esperada de uma pergunta dissertativa (`type === 'subjective'`). */
+  @Column({ name: 'correct_text', type: 'text', nullable: true })
+  correctText!: string | null
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date
 

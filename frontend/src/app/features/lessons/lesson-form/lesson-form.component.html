@@ -1,0 +1,136 @@
+<div class="p-4 md:p-6">
+  <app-detail-header [title]="'lessons.form.newTitle' | transloco" [backLink]="backLink" />
+
+  <div class="glass max-w-3xl overflow-hidden rounded-lg p-4 md:p-6">
+    <app-stepper
+      [steps]="stepLabels"
+      [activeIndex]="step()"
+      [saving]="saving()"
+      (back)="back()"
+      (next)="next()"
+      (cancelled)="cancel()"
+    >
+      @if (step() === 0) {
+        <form [formGroup]="detailsForm" class="flex flex-col gap-1">
+          <app-input
+            [label]="'common.name' | transloco"
+            formControlName="name"
+            [errorMessage]="'common.required' | transloco"
+          />
+
+          <app-input
+            [label]="'common.description' | transloco"
+            formControlName="description"
+            multiline
+          />
+
+          <mat-form-field
+            appearance="outline"
+            [style.--mdc-outlined-text-field-outline-color]="color.primary"
+            [style.--mdc-outlined-text-field-hover-outline-color]="color.primary"
+            [style.--mdc-outlined-text-field-focus-outline-color]="color.primary"
+            [style.--mdc-outlined-text-field-focus-label-text-color]="color.primary"
+            [style.--mdc-outlined-text-field-label-text-color]="color.primary"
+            [style.--mdc-outlined-text-field-hover-label-text-color]="color.primary"
+            [style.--mat-select-enabled-trigger-text-color]="color.ink"
+          >
+            <mat-label>{{ 'lessons.type' | transloco }}</mat-label>
+            <mat-select formControlName="type" panelClass="glass">
+              @for (t of lessonTypes; track t) {
+                <mat-option [value]="t">{{ 'lessons.types.' + t | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </form>
+      } @else if (type === 'content') {
+        <app-rich-editor
+          [formControl]="contentCtrl"
+          [minHeight]="320"
+          [placeholder]="'lessons.contentPlaceholder' | transloco"
+        />
+      } @else {
+        <div class="flex flex-col gap-4">
+          <mat-form-field
+            appearance="outline"
+            [style.--mdc-outlined-text-field-outline-color]="color.primary"
+            [style.--mdc-outlined-text-field-hover-outline-color]="color.primary"
+            [style.--mdc-outlined-text-field-focus-outline-color]="color.primary"
+            [style.--mdc-outlined-text-field-focus-label-text-color]="color.primary"
+            [style.--mdc-outlined-text-field-label-text-color]="color.primary"
+            [style.--mdc-outlined-text-field-hover-label-text-color]="color.primary"
+            [style.--mdc-outlined-text-field-input-text-color]="color.ink"
+            [style.--mdc-outlined-text-field-input-text-placeholder-color]="color.inkMuted"
+            [style.--mdc-outlined-text-field-caret-color]="color.primary"
+          >
+            <mat-label>{{ 'lessons.form.referenceLesson' | transloco }}</mat-label>
+            <input
+              matInput
+              [matAutocomplete]="auto"
+              [formControl]="referenceLessonCtrl"
+              [placeholder]="'lessons.form.referenceLessonPlaceholder' | transloco"
+            />
+            <mat-autocomplete
+              #auto="matAutocomplete"
+              class="glass"
+              [displayWith]="displayLessonName"
+              (optionSelected)="onReferenceLessonSelected($event)"
+            >
+              @for (option of referenceLessonOptions(); track option.id) {
+                <mat-option [value]="option">{{ option.name }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+
+          <div class="flex flex-col gap-2">
+            @for (question of questions(); track question.id) {
+              <div class="glass flex items-center justify-between gap-2 rounded-lg p-3">
+                <div>
+                  <p class="font-sans-400 text-sm text-sp-neutral-900 dark:text-sp-neutral-50">
+                    {{ question.content }}
+                  </p>
+                  <p class="font-sans-400 text-xs text-sp-neutral-700 dark:text-sp-neutral-300">
+                    {{ 'lessons.form.questionTypes.' + question.type | transloco }}
+                  </p>
+                </div>
+                <app-button
+                  iconOnly
+                  size="sm"
+                  type="button"
+                  [color]="color.danger700"
+                  [icon]="Icon.Delete"
+                  [tooltip]="'lessons.form.removeQuestion' | transloco"
+                  (click)="removeQuestion(question)"
+                />
+              </div>
+            } @empty {
+              @if (!addingQuestion()) {
+                <p class="font-sans-400 text-sm text-sp-neutral-700 dark:text-sp-neutral-300">
+                  {{ 'lessons.form.questionsEmpty' | transloco }}
+                </p>
+              }
+            }
+
+            @if (addingQuestion()) {
+              <app-question-form
+                (submitted)="addQuestion($event)"
+                (cancelled)="addingQuestion.set(false)"
+              />
+            } @else {
+              <div>
+                <app-button
+                  variant="outlined"
+                  type="button"
+                  [color]="color.primary700"
+                  [icon]="Icon.Add"
+                  (click)="addingQuestion.set(true)"
+                >
+                  {{ 'lessons.form.addQuestion' | transloco }}
+                </app-button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </app-stepper>
+  </div>
+</div>

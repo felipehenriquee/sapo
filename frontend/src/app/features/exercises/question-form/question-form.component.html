@@ -1,0 +1,103 @@
+<div class="glass flex flex-col gap-3 rounded-lg p-4">
+  <form [formGroup]="form" class="flex flex-col gap-3">
+    <app-input
+      [label]="'lessons.form.questionContent' | transloco"
+      formControlName="content"
+      [errorMessage]="'common.required' | transloco"
+    />
+
+    <mat-form-field
+      appearance="outline"
+      [style.--mdc-outlined-text-field-outline-color]="color.primary"
+      [style.--mdc-outlined-text-field-hover-outline-color]="color.primary"
+      [style.--mdc-outlined-text-field-focus-outline-color]="color.primary"
+      [style.--mdc-outlined-text-field-focus-label-text-color]="color.primary"
+      [style.--mdc-outlined-text-field-label-text-color]="color.primary"
+      [style.--mdc-outlined-text-field-hover-label-text-color]="color.primary"
+      [style.--mat-select-enabled-trigger-text-color]="color.ink"
+    >
+      <mat-label>{{ 'lessons.form.questionType' | transloco }}</mat-label>
+      <mat-select formControlName="type" panelClass="glass">
+        @for (type of questionTypes; track type) {
+          <mat-option [value]="type">{{
+            'lessons.form.questionTypes.' + type | transloco
+          }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (isObjective) {
+      <mat-radio-group [formControl]="correctIndex" class="flex flex-col gap-2">
+        @for (item of items.controls; track item; let i = $index) {
+          <div class="flex items-center gap-2">
+            <mat-radio-button
+              [value]="i"
+              [attr.aria-label]="'lessons.form.correctItem' | transloco"
+              [style.--mdc-radio-selected-icon-color]="color.primary"
+              [style.--mdc-radio-selected-focus-icon-color]="color.primary"
+              [style.--mdc-radio-selected-hover-icon-color]="color.primary"
+              [style.--mdc-radio-selected-pressed-icon-color]="color.primary"
+              [style.--mdc-radio-unselected-icon-color]="color.inkMuted"
+              [style.--mat-radio-checked-ripple-color]="color.primary"
+            />
+            <div class="flex-1">
+              <app-input
+                [label]="('lessons.form.item' | transloco) + ' ' + (i + 1)"
+                [formControl]="item"
+              />
+            </div>
+            @if (items.length > 2) {
+              <app-button
+                iconOnly
+                size="sm"
+                type="button"
+                [color]="color.danger700"
+                [icon]="Icon.Delete"
+                [tooltip]="'lessons.form.removeItem' | transloco"
+                (click)="removeItem(i)"
+              />
+            }
+          </div>
+        }
+      </mat-radio-group>
+
+      @if (touched && correctIndex.value === null) {
+        <p class="text-sm text-red-700">{{ 'common.required' | transloco }}</p>
+      }
+
+      <div>
+        <app-button
+          variant="text"
+          size="sm"
+          type="button"
+          [color]="color.primary700"
+          [icon]="Icon.Add"
+          (click)="addItem()"
+        >
+          {{ 'lessons.form.addItem' | transloco }}
+        </app-button>
+      </div>
+    } @else {
+      <app-input
+        [label]="'lessons.form.correctText' | transloco"
+        [formControl]="correctTextCtrl"
+        multiline
+        [errorMessage]="'common.required' | transloco"
+      />
+    }
+
+    <div class="flex justify-end gap-2">
+      <app-button variant="outlined" [color]="color.ink" type="button" (click)="cancel()">
+        {{ 'common.cancel' | transloco }}
+      </app-button>
+      <app-button
+        [color]="color.primary"
+        [textColor]="color.inkOnAccent"
+        type="button"
+        (click)="submit()"
+      >
+        {{ 'lessons.form.addQuestion' | transloco }}
+      </app-button>
+    </div>
+  </form>
+</div>

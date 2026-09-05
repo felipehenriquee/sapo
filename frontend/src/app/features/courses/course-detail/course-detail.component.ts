@@ -4,8 +4,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
 import { firstValueFrom } from 'rxjs'
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco'
 import { MatExpansionModule } from '@angular/material/expansion'
-import { MatFormFieldModule } from '@angular/material/form-field'
-import { MatSelectModule } from '@angular/material/select'
 
 import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { InputComponent } from '@app/shared/components/input/input.component'
@@ -16,12 +14,8 @@ import { Icon } from '@app/shared/icon.enum'
 import { color } from '@app/core/constants/colors'
 import { CoursesStore } from '@app/features/courses/state/courses.store'
 import { UnitService } from '@app/features/units/services/unit.service'
-import { LessonService } from '@app/features/lessons/services/lesson.service'
 import type { Course, CourseUnitRef } from '@app/features/courses/models/course.model'
 import type { Unit, UnitLessonRef } from '@app/features/units/models/unit.model'
-import type { LessonType } from '@app/features/lessons/models/lesson.model'
-
-type FormMode = 'unit' | 'lesson'
 
 /**
  * Tela de detalhe do curso (rota `/courses/:id`). Mostra os dados do curso e
@@ -29,8 +23,8 @@ type FormMode = 'unit' | 'lesson'
  * abrir, busca a unidade por id e lista as aulas (clicar numa aula abre a
  * página da aula, `/courses/:id/lessons/:lessonId`).
  *
- * Um único GeneralModal (com formulário nome/descrição) atende tanto
- * "adicionar módulo" quanto "adicionar aula" (ver `formMode`).
+ * "Adicionar aula" navega pra uma página própria (`lesson-form`, com steps);
+ * só "adicionar módulo" ainda usa o GeneralModal genérico.
  */
 @Component({
   selector: 'app-course-detail',
@@ -38,8 +32,6 @@ type FormMode = 'unit' | 'lesson'
   imports: [
     ReactiveFormsModule,
     MatExpansionModule,
-    MatFormFieldModule,
-    MatSelectModule,
     TranslocoPipe,
     ButtonComponent,
     InputComponent,
@@ -53,7 +45,6 @@ export class CourseDetailComponent implements OnInit {
   private readonly router = inject(Router)
   private readonly coursesStore = inject(CoursesStore)
   private readonly unitService = inject(UnitService)
-  private readonly lessonService = inject(LessonService)
   private readonly transloco = inject(TranslocoService)
 
   readonly Icon = Icon
@@ -70,15 +61,12 @@ export class CourseDetailComponent implements OnInit {
   readonly unitDetails = signal<Record<string, Unit>>({})
   readonly loadingUnit = signal<string | null>(null)
 
-  // --- formulário de criação (módulo / aula) ---
-  readonly formMode = signal<FormMode | null>(null)
-  readonly formUnitId = signal<string | null>(null)
+  // --- formulário de criação de módulo ---
+  readonly unitFormOpen = signal(false)
   readonly saving = signal(false)
-  readonly lessonTypes: LessonType[] = ['content', 'exercise']
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
     description: [''],
-    type: ['content' as LessonType, [Validators.required]],
   })
 
   async ngOnInit(): Promise<void> {
@@ -106,10 +94,6 @@ export class CourseDetailComponent implements OnInit {
     ]
   }
 
-  get formTitle(): string {
-    return this.transloco.translate(this.formMode() === 'lesson' ? 'lessons.add' : 'units.add')
-  }
-
   lessonsOf(unitId: string): UnitLessonRef[] | undefined {
     return this.unitDetails()[unitId]?.lessons
   }
@@ -132,20 +116,18 @@ export class CourseDetailComponent implements OnInit {
     void this.router.navigate(['/courses', this.id, 'lessons', ref.id])
   }
 
-  openAddUnit(): void {
-    this.form.reset()
-    this.formUnitId.set(null)
-    this.formMode.set('unit')
+  /** Abre a página de criação de aula (wizard de steps). */
+  openAddLesson(unitId: string): void {
+    void this.router.navigate(['/courses', this.id, 'units', unitId, 'lessons', 'new'])
   }
 
-  openAddLesson(unitId: string): void {
+  openAddUnit(): void {
     this.form.reset()
-    this.formUnitId.set(unitId)
-    this.formMode.set('lesson')
+    this.unitFormOpen.set(true)
   }
 
   closeForm(): void {
-    this.formMode.set(null)
+    this.unitFormOpen.set(false)
   }
 
   async saveForm(): Promise<void> {
@@ -154,21 +136,13 @@ export class CourseDetailComponent implements OnInit {
       return
     }
 
-    const { name, description, type } = this.form.getRawValue()
+    const { name, description } = this.form.getRawValue()
     const payload = { name, description: description.trim() || undefined }
     this.saving.set(true)
     try {
-      if (this.formMode() === 'unit') {
-        await firstValueFrom(this.unitService.create({ ...payload, courseId: this.id }))
-        this.course.set(await this.coursesStore.getById(this.id))
-      } else {
-        const unitId = this.formUnitId()
-        if (!unitId) return
-        await firstValueFrom(this.lessonService.create({ ...payload, type, unitId }))
-        await this.loadUnit(unitId)
-        this.bumpLessonsCount(unitId)
-      }
-      this.formMode.set(null)
+      await firstValueFrom(this.unitService.create({ ...payload, courseId: this.id }))
+      this.course.set(await this.coursesStore.getById(this.id))
+      this.unitFormOpen.set(false)
     } finally {
       this.saving.set(false)
     }
@@ -182,17 +156,5 @@ export class CourseDetailComponent implements OnInit {
     } finally {
       this.loadingUnit.set(null)
     }
-  }
-
-  private bumpLessonsCount(unitId: string): void {
-    const count = this.unitDetails()[unitId]?.lessons?.length ?? 0
-    this.course.update((course) =>
-      course
-        ? {
-            ...course,
-            units: course.units?.map((u) => (u.id === unitId ? { ...u, lessonsCount: count } : u)),
-          }
-        : course,
-    )
   }
 }

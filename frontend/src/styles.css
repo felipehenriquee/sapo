@@ -256,3 +256,28 @@ body {
   --mat-select-enabled-arrow-color: #dbf24e;
   --mat-select-placeholder-text-color: #d4dae3;
 }
+
+/*
+ * Painel de opções de mat-select/mat-autocomplete (`panelClass`/`class`
+ * "glass") — sem isso o painel fica com o branco padrão do Material (não
+ * theme-aware) e a opção selecionada some contra o texto escuro. Portalado
+ * pro cdk-overlay-container, fora da árvore do `.glass` do form — por isso
+ * precisa do seletor composto próprio (igual menu-panel/expansion-panel),
+ * não um seletor descendente do `.glass` do formulário.
+ */
+.mat-mdc-select-panel.glass,
+.mat-mdc-autocomplete-panel.glass {
+  background: linear-gradient(180deg, oklch(1 0 0 / 90%), oklch(1 0 0 / 75%));
+  border: 1px solid oklch(0 0 0 / 8%);
+  backdrop-filter: blur(18px);
+  --mat-option-label-text-color: #343941;
+  --mat-option-selected-state-label-text-color: #345efc;
+}
+.dark .mat-mdc-select-panel.glass,
+.dark .mat-mdc-autocomplete-panel.glass {
+  background: linear-gradient(180deg, oklch(1 0 0 / 7%), oklch(1 0 0 / 3%));
+  border: 1px solid oklch(1 0 0 / 10%);
+  backdrop-filter: blur(18px);
+  --mat-option-label-text-color: #fafafc;
+  --mat-option-selected-state-label-text-color: #dbf24e;
+}

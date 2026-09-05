@@ -106,8 +106,8 @@
 </div>
 
 <app-general-modal
-  [open]="formMode() !== null"
-  [title]="formTitle"
+  [open]="unitFormOpen()"
+  [title]="'units.add' | transloco"
   size="sm"
   [saving]="saving()"
   (save)="saveForm()"
@@ -122,16 +122,5 @@
     />
 
     <app-input [label]="'common.description' | transloco" formControlName="description" multiline />
-
-    @if (formMode() === 'lesson') {
-      <mat-form-field appearance="outline">
-        <mat-label>{{ 'lessons.type' | transloco }}</mat-label>
-        <mat-select formControlName="type">
-          @for (type of lessonTypes; track type) {
-            <mat-option [value]="type">{{ 'lessons.types.' + type | transloco }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    }
   </form>
 </app-general-modal>
